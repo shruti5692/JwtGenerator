@@ -1,0 +1,28 @@
+package com.example.jwtdemo.controller;
+
+import com.example.jwtdemo.service.JwtService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+
+@RestController
+@RequestMapping("/auth")
+public class AuthController {
+
+    @Autowired
+    private JwtService jwtService;
+
+    // Simple DTO for request body
+    public static class LoginRequest {
+        public String username;
+        public String password;
+    }
+
+    @PostMapping("/token")
+    public Map<String, String> generateToken(@RequestBody LoginRequest request) {
+        // NOTE: For demo purposes, we skip real password validation.
+        String token = jwtService.generateToken(request.username);
+        return Map.of("token", token);
+    }
+}
