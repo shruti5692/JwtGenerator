@@ -4,6 +4,7 @@ import com.example.jwtdemo.service.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -13,18 +14,17 @@ public class AuthController {
     @Autowired
     private JwtService jwtService;
 
-    // Simple DTO for request body
-    public static class LoginRequest {
-        public String username;
-        public String password;
-    }
-
     @PostMapping("/token")
-public Map<String, String> generateToken(@RequestBody LoginRequest request) {
-    String token = jwtService.generateToken(request.username);
+    public Map<String, String> generateToken(@RequestBody TokenRequest request) {
+        // Extract username from nested input
+        String username = request.input_token_state.username;
 
-    Map<String, String> response = new HashMap<>();
-    response.put("token", token);
-    return response;
-}
+        // Generate a long JWT
+        String token = jwtService.generateLongToken(username);
+
+        // Response: return the JWT in JSON
+        Map<String, String> response = new HashMap<>();
+        response.put("jwt_token", token);
+        return response;
+    }
 }
