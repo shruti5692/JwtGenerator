@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
-import java.util.Date;
+import java.util.*;
 
 @Service
 public class JwtService {
@@ -18,15 +18,30 @@ public class JwtService {
     @Value("${jwt.expiration}")
     private long expirationMs;
 
-    public String generateToken(String username) {
-        // Use the provided secret to create a key
+    public String generateLongToken(String username) {
         SecretKey key = Keys.hmacShaKeyFor(secret.getBytes());
 
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", "admin");
+        claims.put("email", username + "@example.com");
+        claims.put("sessionId", UUID.randomUUID().toString());
+        claims.put("permissions", Arrays.asList("read","write","delete","update"));
+        // Add padding to intentionally lengthen the token
+        claims.put("padding", generatePadding());
+
         return Jwts.builder()
+                .setClaims(claims)
                 .setSubject(username)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    private String generatePadding() {
+        // create a long random string to enlarge the token
+        char[] chars = new char[500];
+        Arrays.fill(chars, 'x');
+        return new String(chars);
     }
 }
