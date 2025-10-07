@@ -1,17 +1,9 @@
-package com.example.jwtmock.controller;
+package org.example.controller;
 
 public class TokenRequest {
-    public InputTokenState input_token_state;
-    public OutputTokenState output_token_state;
+    public InputTokenState inputTokenState;
 
     public static class InputTokenState {
-        public String token_type;
         public String username;
-        public String password;
-    }
-
-    public static class OutputTokenState {
-        public String token_type;
-        public String issued_token1;
     }
 }
