@@ -1,56 +1,33 @@
-package com.example.mocktokenapi.controller;
+package com.example.jwtmock.controller;
 
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.bind.annotation.GetMapping;
+import com.example.jwtmock.service.JwtMockService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.security.KeyFactory;
-import java.security.PrivateKey;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
-public class MockTokenController {
+public class AuthController {
 
-    @Value("${jwt.private-key}")
-    private String privateKeyBase64;
+    @Autowired
+    private JwtMockService jwtMockService;
 
-    @Value("${jwt.expiration}")
-    private long jwtExpiration;
+    // POST /auth/mock-token
+    @PostMapping(path = "/auth/mock-token", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Map<String, String> generateMockToken(@RequestBody(required = false) TokenRequest request) {
+        String username = "GB-SVC-UKBEREV";
+        if (request != null && request.input_token_state != null && request.input_token_state.username != null && !request.input_token_state.username.trim().isEmpty()) {
+            username = request.input_token_state.username.trim();
+        }
 
-    @GetMapping("/mock/token")
-    public Map<String, String> generateToken() throws Exception {
-        long now = System.currentTimeMillis();
-        long expiryTime = now + jwtExpiration; // e.g., 1 hour
+        String token = jwtMockService.generateToken(username);
 
-        // Decode Base64 private key
-        byte[] keyBytes = Base64.getDecoder().decode(privateKeyBase64);
-        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
-        PrivateKey privateKey = KeyFactory.getInstance("RSA").generatePrivate(spec);
-
-        // Claims
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("sub", "GB-SVC-UKBEREV");
-        claims.put("iss", "cmbdsp.uk.hsbc.com");
-        claims.put("sit", "ad:svc:principal");
-
-        // Build JWT
-        String token = Jwts.builder()
-                .setHeaderParam("typ", "JWT")
-                .setHeaderParam("kid", "E2E_TRUST_SAML_CMB_UAT")
-                .setHeaderParam("alg", "RS256")
-                .setHeaderParam("sch", "urn:aim:token:internal")
-                .setHeaderParam("scv", "1.0")
-                .setHeaderParam("tkv", "1.0")
-                .setClaims(claims)
-                .setIssuedAt(new Date(now))
-                .setExpiration(new Date(expiryTime))
-                .signWith(privateKey, SignatureAlgorithm.RS256)
-                .compact();
-
-        // Response
-        return Collections.singletonMap("issued_token", token);
+        Map<String, String> resp = new HashMap<>();
+        resp.put("issued_token", token);
+        return resp;
     }
 }
