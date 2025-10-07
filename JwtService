@@ -5,7 +5,6 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -14,23 +13,24 @@ import java.util.*;
 @Service
 public class JwtMockService {
 
-    @Value("${jwt.private-key}")
-    private String privateKeyBase64; // PKCS#8 DER bytes -> base64 (one-liner)
+    private final PrivateKey privateKey;   // final, initialized in constructor
+    private final long expirationMs;
 
-    @Value("${jwt.expiration}")
-    private long expirationMs; // milliseconds
-
-    private PrivateKey privateKey;
-
-    @PostConstruct
-    public void init() throws Exception {
+    public JwtMockService(
+            @Value("${jwt.private-key}") String privateKeyBase64,
+            @Value("${jwt.expiration}") long expirationMs
+    ) throws Exception {
         if (privateKeyBase64 == null || privateKeyBase64.trim().isEmpty()) {
             throw new IllegalStateException("jwt.private-key is not set in application.properties");
         }
+
+        // Decode Base64 private key and build PrivateKey instance
         byte[] keyBytes = Base64.getDecoder().decode(privateKeyBase64.trim());
         PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
-        KeyFactory kf = KeyFactory.getInstance("RSA");
-        this.privateKey = kf.generatePrivate(spec);
+        this.privateKey = KeyFactory.getInstance("RSA").generatePrivate(spec);
+
+        // Assign expiration
+        this.expirationMs = expirationMs;
     }
 
     public String generateToken(String username) {
@@ -56,6 +56,7 @@ public class JwtMockService {
         claims.put("jti", UUID.randomUUID().toString());
         claims.put("sit", "ad:svc:principal");
 
+        // Use the injected privateKey here — fully runtime-safe
         return Jwts.builder()
                 .setHeader(header)
                 .setClaims(claims)
