@@ -1,0 +1,23 @@
+package com.example.jwtmock.util;
+
+import java.security.*;
+import java.util.Base64;
+
+public class KeyGen {
+    public static void main(String[] args) throws Exception {
+        KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+        keyGen.initialize(2048);
+
+        KeyPair pair = keyGen.generateKeyPair();
+        PrivateKey privateKey = pair.getPrivate();
+        PublicKey publicKey = pair.getPublic();
+
+        String privateKeyBase64 = Base64.getEncoder().encodeToString(privateKey.getEncoded());
+        String publicKeyBase64 = Base64.getEncoder().encodeToString(publicKey.getEncoded());
+
+        System.out.println("----- PRIVATE KEY (Base64 PKCS#8) -----");
+        System.out.println(privateKeyBase64);
+        System.out.println("\\n----- PUBLIC KEY (Base64 X.509) -----");
+        System.out.println(publicKeyBase64);
+    }
+}
