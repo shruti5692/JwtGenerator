@@ -1,6 +1,6 @@
-package com.example.jwtdemo.controller;
+package com.example.jwtmock.controller;
 
-import com.example.jwtdemo.service.JwtService;
+import com.example.jwtmock.service.JwtMockService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,19 +12,21 @@ import java.util.Map;
 public class AuthController {
 
     @Autowired
-    private JwtService jwtService;
+    private JwtMockService jwtMockService;
 
-    @PostMapping("/token")
-    public Map<String, String> generateToken(@RequestBody TokenRequest request) {
-        // Extract username from nested input
-        String username = request.input_token_state.username;
+    @PostMapping("/mock-token")
+    public Map<String, Object> generateMockToken(@RequestBody TokenRequest request) {
+        String username = (request.input_token_state != null) ? request.input_token_state.username : "GB-SVC-UKBEREV";
+        String token = jwtMockService.generateMockToken(username);
 
-        // Generate a long JWT
-        String token = jwtService.generateLongToken(username);
+        Map<String, Object> outputState = new HashMap<>();
+        outputState.put("token_type", "JWT");
+        outputState.put("issued_token1", token);
 
-        // Response: return the JWT in JSON
-        Map<String, String> response = new HashMap<>();
-        response.put("jwt_token", token);
+        Map<String, Object> response = new HashMap<>();
+        response.put("input_token_state", request.input_token_state);
+        response.put("output_token_state", outputState);
+
         return response;
     }
 }
