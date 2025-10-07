@@ -1,7 +1,6 @@
-package com.example.jwtdemo.controller;
+package com.example.jwtmock.controller;
 
 public class TokenRequest {
-
     public InputTokenState input_token_state;
     public OutputTokenState output_token_state;
 
