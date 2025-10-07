@@ -1,47 +1,46 @@
-package com.example.jwtdemo.service;
+package com.example.jwtmock.service;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
-import javax.crypto.SecretKey;
+import java.security.KeyPair;
 import java.util.*;
 
+import org.springframework.stereotype.Service;
+
 @Service
-public class JwtService {
+public class JwtMockService {
 
-    @Value("${jwt.secret}")
-    private String secret;
+    private final KeyPair keyPair;
 
-    @Value("${jwt.expiration}")
-    private long expirationMs;
-
-    public String generateLongToken(String username) {
-        SecretKey key = Keys.hmacShaKeyFor(secret.getBytes());
-
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("role", "admin");
-        claims.put("email", username + "@example.com");
-        claims.put("sessionId", UUID.randomUUID().toString());
-        claims.put("permissions", Arrays.asList("read","write","delete","update"));
-        // Add padding to intentionally lengthen the token
-        claims.put("padding", generatePadding());
-
-        return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(username)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
-                .signWith(key, SignatureAlgorithm.HS256)
-                .compact();
+    public JwtMockService() {
+        this.keyPair = KeyUtil.generateRSAKeyPair();
     }
 
-    private String generatePadding() {
-        // create a long random string to enlarge the token
-        char[] chars = new char[500];
-        Arrays.fill(chars, 'x');
-        return new String(chars);
+    public String generateMockToken(String username) {
+        Map<String, Object> header = new HashMap<>();
+        header.put("typ", "JWT");
+        header.put("kid", "E2E_TRUST_SAML_CMB_UAT");
+        header.put("alg", "RS256");
+        header.put("sch", "urn:aim:token:internal");
+        header.put("scv", "1.0");
+        header.put("tkv", "1.0");
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("sub", username != null ? username : "GB-SVC-UKBEREV");
+        payload.put("grp", Arrays.asList(
+                "CN=InfoDir-CB-RPS-NVP-DEV, OU=HBEU, OU=CB_RPS, OU=Applications, OU=Groups, DC=InfoDir, DC=Prod, DC=HSBC",
+                "CN=InfoDir-RBWM-UKB-RPS-CI-DEV, OU=HBEU, OU=RBWM-UKB-RPS-CI, OU=Applications, OU=Groups, DC=InfoDir, DC=Prod, DC=HSBC"
+        ));
+        payload.put("iss", "cmbdsp.uk.hsbc.com");
+        payload.put("iat", System.currentTimeMillis() / 1000);
+        payload.put("exp", (System.currentTimeMillis() / 1000) + 3600);
+        payload.put("jti", UUID.randomUUID().toString());
+        payload.put("sit", "ad:svc:principal");
+
+        return Jwts.builder()
+                .setHeader(header)
+                .setClaims(payload)
+                .signWith(keyPair.getPrivate(), SignatureAlgorithm.RS256)
+                .compact();
     }
 }
