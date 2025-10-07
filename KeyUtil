@@ -1,0 +1,15 @@
+package com.example.jwtmock.service;
+
+import java.security.*;
+
+public class KeyUtil {
+    public static KeyPair generateRSAKeyPair() {
+        try {
+            KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+            generator.initialize(2048);
+            return generator.generateKeyPair();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate RSA key pair", e);
+        }
+    }
+}
