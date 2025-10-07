@@ -1,6 +1,6 @@
-package com.example.jwtmock.controller;
+package org.example.controller;
 
-import com.example.jwtmock.service.JwtMockService;
+import org.example.service.JwtService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
@@ -10,25 +10,23 @@ import java.util.Map;
 @RequestMapping("/auth")
 public class AuthController {
 
-    private final JwtMockService jwtMockService;
+    private final JwtService jwtService;
 
-    // Constructor injection
-    public AuthController(JwtMockService jwtMockService) {
-        this.jwtMockService = jwtMockService;
+    public AuthController(JwtService jwtService) {
+        this.jwtService = jwtService;
     }
 
-    @PostMapping("/mock-token")
+    @PostMapping("/token")
     public Map<String, String> generateToken(@RequestBody(required = false) TokenRequest request) {
         String username = "GB-SVC-UKBEREV";
 
-        if (request != null
-                && request.input_token_state != null
-                && request.input_token_state.username != null
-                && !request.input_token_state.username.trim().isEmpty()) {
-            username = request.input_token_state.username.trim();
+        if (request != null && request.inputTokenState != null
+                && request.inputTokenState.username != null
+                && !request.inputTokenState.username.trim().isEmpty()) {
+            username = request.inputTokenState.username.trim();
         }
 
-        String token = jwtMockService.generateToken(username);
+        String token = jwtService.generateToken(username);
         return Collections.singletonMap("issued_token", token);
     }
 }
