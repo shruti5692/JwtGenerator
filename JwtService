@@ -1,4 +1,4 @@
-package com.example.jwtmock.service;
+package org.example.service;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -11,12 +11,12 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.*;
 
 @Service
-public class JwtMockService {
+public class JwtService {
 
-    private final PrivateKey privateKey;   // final, initialized in constructor
+    private final PrivateKey privateKey;
     private final long expirationMs;
 
-    public JwtMockService(
+    public JwtService(
             @Value("${jwt.private-key}") String privateKeyBase64,
             @Value("${jwt.expiration}") long expirationMs
     ) throws Exception {
@@ -24,12 +24,10 @@ public class JwtMockService {
             throw new IllegalStateException("jwt.private-key is not set in application.properties");
         }
 
-        // Decode Base64 private key and build PrivateKey instance
         byte[] keyBytes = Base64.getDecoder().decode(privateKeyBase64.trim());
         PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
         this.privateKey = KeyFactory.getInstance("RSA").generatePrivate(spec);
 
-        // Assign expiration
         this.expirationMs = expirationMs;
     }
 
@@ -56,7 +54,6 @@ public class JwtMockService {
         claims.put("jti", UUID.randomUUID().toString());
         claims.put("sit", "ad:svc:principal");
 
-        // Use the injected privateKey here — fully runtime-safe
         return Jwts.builder()
                 .setHeader(header)
                 .setClaims(claims)
