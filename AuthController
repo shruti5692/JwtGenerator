@@ -1,32 +1,30 @@
-package org.example.controller;
+package com.example.jwtdemo.controller;
 
-import org.example.service.JwtService;
+import com.example.jwtdemo.service.JwtService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
 
-    private final JwtService jwtService;
-
-    public AuthController(JwtService jwtService) {
-        this.jwtService = jwtService;
-    }
+    @Autowired
+    private JwtService jwtService;
 
     @PostMapping("/token")
-    public Map<String, String> generateToken(@RequestBody(required = false) TokenRequest request) {
-        String username = "GB-SVC-UKBEREV";
+    public Map<String, String> generateToken(@RequestBody TokenRequest request) {
+        // Extract username from nested input
+        String username = request.input_token_state.username;
 
-        if (request != null && request.inputTokenState != null
-                && request.inputTokenState.username != null
-                && !request.inputTokenState.username.trim().isEmpty()) {
-            username = request.inputTokenState.username.trim();
-        }
+        // Generate a long JWT
+        String token = jwtService.generateLongToken(username);
 
-        String token = jwtService.generateToken(username);
-        return Collections.singletonMap("issued_token", token);
+        // Response: return the JWT in JSON
+        Map<String, String> response = new HashMap<>();
+        response.put("jwt_token", token);
+        return response;
     }
 }
