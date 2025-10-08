@@ -1,71 +1,47 @@
-package org.example.service;
+package com.example.jwtdemo.service;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.security.KeyFactory;
-import java.security.PrivateKey;
-import java.security.spec.PKCS8EncodedKeySpec;
+import javax.crypto.SecretKey;
 import java.util.*;
 
 @Service
 public class JwtService {
 
-    private final PrivateKey privateKey;
-    private final long expirationMs;
+    @Value("${jwt.secret}")
+    private String secret;
 
-    public JwtService(
-            @Value("${jwt.private-key}") String privateKeyBase64,
-            @Value("${jwt.expiration}") long expirationMs
-    ) throws Exception {
-        if (privateKeyBase64 == null || privateKeyBase64.trim().isEmpty()) {
-            throw new IllegalStateException("jwt.private-key is not set in application.properties");
-        }
+    @Value("${jwt.expiration}")
+    private long expirationMs;
 
-        byte[] keyBytes = Base64.getDecoder().decode(privateKeyBase64.trim());
-        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
-        this.privateKey = KeyFactory.getInstance("RSA").generatePrivate(spec);
-
-        this.expirationMs = expirationMs;
-    }
-
-    public String generateToken(String username) {
-        long nowMillis = System.currentTimeMillis();
-        long expMillis = nowMillis + expirationMs;
-        long nowSec = nowMillis / 1000L;
-        long expSec = expMillis / 1000L;
-
-        Map<String, Object> header = new HashMap<>();
-        header.put("typ", "JWT");
-        header.put("kid", "E2E_TRUST_SAML_CMB_UAT");
-        header.put("alg", "RS256");
-        header.put("sch", "urn:aim:token:internal");
-        header.put("scv", "1.0");
-        header.put("tkv", "1.0");
+    public String generateLongToken(String username) {
+        SecretKey key = Keys.hmacShaKeyFor(secret.getBytes());
 
         Map<String, Object> claims = new HashMap<>();
-        claims.put("sub", username);
-        claims.put("grp", defaultGroups());
-        claims.put("iss", "cmbdsp.uk.hsbc.com");
-        claims.put("iat", nowSec);
-        claims.put("exp", expSec);
-        claims.put("jti", UUID.randomUUID().toString());
-        claims.put("sit", "ad:svc:principal");
+        claims.put("role", "admin");
+        claims.put("email", username + "@example.com");
+        claims.put("sessionId", UUID.randomUUID().toString());
+        claims.put("permissions", Arrays.asList("read","write","delete","update"));
+        // Add padding to intentionally lengthen the token
+        claims.put("padding", generatePadding());
 
         return Jwts.builder()
-                .setHeader(header)
                 .setClaims(claims)
-                .signWith(privateKey, SignatureAlgorithm.RS256)
+                .setSubject(username)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
+                .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    private List<String> defaultGroups() {
-        return Arrays.asList(
-                "CN=InfoDir-CB-RPS-NVP-DEV, OU=HBEU, OU=CB_RPS, OU=Applications, OU=Groups, DC=InfoDir, DC=Prod, DC=HSBC",
-                "CN=infodir-MyWorkspace-UK-Bereavement-DEV-BR, OU=UK, OU=HBEU, OU=Bereavement, OU=MyWorkspace, OU=Applications, OU=Groups, DC=InfoDir, DC=Prod, DC=HSBC",
-                "CN=InfoDir-RBWM-UKB-RPS-CI-DEV, OU=HBEU, OU=RBWM-UKB-RPS-CI, OU=Applications, OU=Groups, DC=InfoDir, DC=Prod, DC=HSBC"
-        );
+    private String generatePadding() {
+        // create a long random string to enlarge the token
+        char[] chars = new char[500];
+        Arrays.fill(chars, 'x');
+        return new String(chars);
     }
 }
